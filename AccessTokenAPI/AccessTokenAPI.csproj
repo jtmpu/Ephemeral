@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net45;net40</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ilmerge" Version="3.0.29" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WinAPI\WinAPI.csproj" />
+  </ItemGroup>
+  
+  <Target Name="Remove ILMerge artifacts" AfterTargets="Clean">
+    <RemoveDir Directories="$(TargetDir)merged" />
+  </Target>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if $(ConfigurationName) == Release (&#xD;&#xA;if NOT &quot;$(OutDir)&quot;==&quot;bin\Release\netstandard2.0\&quot; (&#xD;&#xA;del $(TargetDir)*.pdb&#xD;&#xA;mkdir $(TargetDir)merged&#xD;&#xA;&quot;$(ILMergeConsolePath)&quot; /out:&quot;$(TargetDir)merged\$(TargetName).all.dll&quot; &quot;$(TargetDir)*.dll&quot; /target:dll /wildcards&#xD;&#xA;)&#xD;&#xA;)" />
+  </Target>
+
+</Project>
