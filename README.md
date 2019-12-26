@@ -1,6 +1,6 @@
 # Ephemeral
 
-https://github.com/jtmpu/Ephemeral/workflows/CI/badge.svg
+![](https://github.com/jtmpu/Ephemeral/workflows/CI/badge.svg)
 
 A suite of tools for lateral movements within a windows environment.
 
