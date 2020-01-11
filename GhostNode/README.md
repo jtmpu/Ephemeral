@@ -1,3 +1,0 @@
-# GhostNode
-
-TODO

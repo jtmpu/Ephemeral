@@ -134,5 +134,17 @@ namespace Ephemeral.WinAPI
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern IntPtr GetStdHandle(int nStdHandle);
 
+        [DllImport("kernel32.dll", EntryPoint = "PeekNamedPipe", SetLastError = true)]
+        public static extern bool PeekNamedPipe(
+            IntPtr handle,
+            byte[] buffer,
+            uint nBufferSize, 
+            ref uint bytesRead,
+            ref uint bytesAvail,
+            ref uint BytesLeftThisMessage);
+
+        [DllImport("kernel32.dll")]
+        public static extern bool FlushFileBuffers(IntPtr hFile);
+
     }
 }

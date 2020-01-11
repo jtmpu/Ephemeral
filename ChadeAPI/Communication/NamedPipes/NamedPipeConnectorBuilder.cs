@@ -1,20 +1,25 @@
-﻿using System;
+﻿using Ephemeral.Chade.Exceptions;
+using Ephemeral.Chade.Logging;
+using Ephemeral.WinAPI;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using Ephemeral.Ghost.Exceptions;
-using Ephemeral.Ghost.Logging;
-using Ephemeral.WinAPI;
 
-namespace Ephemeral.Ghost.Domain
+namespace Ephemeral.Chade.Communication.NamedPipes
 {
-    public class NamedPipeBuilder
+    public enum NamedPipeConnectorType
+    {
+        Bind
+    }
+
+    public class NamedPipeConnectorBuilder
     {
         public string Name { get; private set; }
 
         public uint OpenMode { get; private set; }
-
+        
         public uint Mode { get; private set; }
 
         public uint InBufferSize { get; private set; }
@@ -25,10 +30,11 @@ namespace Ephemeral.Ghost.Domain
 
         public bool NullLogonSessions { get; private set; }
 
-        public NamedPipeBuilder()
+        public NamedPipeConnectorType Type { get; private set; }
+
+        public NamedPipeConnectorBuilder()
         {
-            // setting some sane defaults.
-            this.Name = "Ephemeral.Ghost";
+            this.Name = "Ephemeral.Chade";
             this.OpenMode = (uint)PipeOpenModeFlags.PIPE_ACCESS_DUPLEX;
             this.Mode = (uint)PipeModeFlags.PIPE_TYPE_BYTE | (uint)PipeModeFlags.PIPE_WAIT;
             this.InBufferSize = 1024;
@@ -45,7 +51,7 @@ namespace Ephemeral.Ghost.Domain
         /// </summary>
         /// <param name="enabled"></param>
         /// <returns></returns>
-        public NamedPipeBuilder SetNullDACL(bool enabled)
+        public NamedPipeConnectorBuilder SetNullDACL(bool enabled)
         {
             this.NullDACL = enabled;
             return this;
@@ -59,45 +65,45 @@ namespace Ephemeral.Ghost.Domain
         /// Consider performing a NamedPipeBuilder.Cleanup() if this is used.
         /// </summary>
         /// <returns></returns>
-        public NamedPipeBuilder SetNullLogonSessions(bool enabled)
+        public NamedPipeConnectorBuilder SetNullLogonSessions(bool enabled)
         {
             this.NullLogonSessions = enabled;
             return this;
         }
 
-        public NamedPipeBuilder SetName(string name)
+        public NamedPipeConnectorBuilder SetName(string name)
         {
             this.Name = name;
             return this;
         }
 
-        public NamedPipeBuilder SetOpenMode(params PipeOpenModeFlags[] flags)
+        public NamedPipeConnectorBuilder SetOpenMode(params PipeOpenModeFlags[] flags)
         {
             this.OpenMode = 0;
-            foreach(var flag in flags)
+            foreach (var flag in flags)
             {
                 this.OpenMode |= (uint)flag;
             }
             return this;
         }
 
-        public NamedPipeBuilder SetMode(params PipeModeFlags[] flags)
+        public NamedPipeConnectorBuilder SetMode(params PipeModeFlags[] flags)
         {
             this.Mode = 0;
-            foreach(var flag in flags)
+            foreach (var flag in flags)
             {
                 this.Mode |= (uint)flag;
             }
             return this;
         }
 
-        public NamedPipeBuilder SetInBufferSize(uint size)
+        public NamedPipeConnectorBuilder SetInBufferSize(uint size)
         {
             this.InBufferSize = size;
             return this;
         }
 
-        public NamedPipeBuilder SetOutBufferSize(uint size)
+        public NamedPipeConnectorBuilder SetOutBufferSize(uint size)
         {
             this.OutBufferSize = size;
             return this;
@@ -105,28 +111,29 @@ namespace Ephemeral.Ghost.Domain
 
         #endregion
 
-        public NamedPipe Create()
+
+        public IConnector Build()
         {
             var pipeName = $"\\\\.\\pipe\\{this.Name}";
 
             IntPtr pSecAttr = IntPtr.Zero;
             IntPtr pSecDesc = IntPtr.Zero;
 
-            if(this.NullDACL)
+            if (this.NullDACL)
             {
                 this.InnerCreateNullDACL(out pSecAttr, out pSecDesc);
             }
 
-            IntPtr pipeHandle = Kernel32.CreateNamedPipe(pipeName, 
-                this.OpenMode, 
-                this.Mode, 
-                Constants.PIPE_UNLIMITED_INSTANCES, 
+            IntPtr pipeHandle = Kernel32.CreateNamedPipe(pipeName,
+                this.OpenMode,
+                this.Mode,
+                Constants.PIPE_UNLIMITED_INSTANCES,
                 this.OutBufferSize,
-                this.InBufferSize, 
-                Constants.NMPWAIT_WAIT_FOREVER, 
+                this.InBufferSize,
+                Constants.NMPWAIT_WAIT_FOREVER,
                 pSecAttr);
 
-            if(pipeHandle.ToInt32() == Constants.INVALID_HANDLE_VALUE)
+            if (pipeHandle.ToInt32() == Constants.INVALID_HANDLE_VALUE)
             {
                 var msg = $"Failed to create pipe. CreateNamedPipe failed with error code: {Kernel32.GetLastError()}";
                 Logger.GetInstance().Error(msg);
@@ -140,19 +147,19 @@ namespace Ephemeral.Ghost.Domain
                 throw new Win32Exception(msg);
             }
 
-            if(this.NullDACL)
+            if (this.NullDACL)
             {
                 Marshal.FreeHGlobal(pSecDesc);
                 Marshal.FreeHGlobal(pSecAttr);
             }
 
-            if(this.NullLogonSessions)
+            if (this.NullLogonSessions)
             {
-                NamedPipeBuilder.ConfigureNullLogonSession(this.Name);
+                NamedPipeConnectorBuilder.ConfigureNullLogonSession(this.Name);
             }
 
 
-            return new NamedPipe(pipeHandle, this.Name, this.InBufferSize, this.OutBufferSize, this.OpenMode, this.Mode);
+            return new NamedPipeBindConnector(pipeHandle, this.Name, this.InBufferSize, this.OutBufferSize, this.OpenMode, this.Mode);
         }
 
         /// <summary>
@@ -164,14 +171,14 @@ namespace Ephemeral.Ghost.Domain
             SECURITY_ATTRIBUTES secAttr = new SECURITY_ATTRIBUTES();
             SECURITY_DESCRIPTOR secDesc = new SECURITY_DESCRIPTOR();
 
-            if(!Advapi32.InitializeSecurityDescriptor(out secDesc, 1))
+            if (!Advapi32.InitializeSecurityDescriptor(out secDesc, 1))
             {
                 var msg = $"Failed to initialize new security descriptor when creating pipe. InitializeSecurityDescriptor failed with error code: {Kernel32.GetLastError()}";
                 Logger.GetInstance().Error(msg);
                 throw new Win32Exception(msg);
             }
 
-            if(!Advapi32.SetSecurityDescriptorDacl(ref secDesc, true, IntPtr.Zero, false))
+            if (!Advapi32.SetSecurityDescriptorDacl(ref secDesc, true, IntPtr.Zero, false))
             {
                 var msg = $"Failed to set null DACL for security descriptor when creating pipe. SetSecurityDescriptorDacl failed with error code: {Kernel32.GetLastError()}";
                 Logger.GetInstance().Error(msg);
@@ -191,7 +198,7 @@ namespace Ephemeral.Ghost.Domain
         {
             var pipes = GetNullLogonSessionRegistry();
 
-            if(!pipes.Contains(name))
+            if (!pipes.Contains(name))
             {
                 pipes.Add(name);
                 SetNullLogonSessionRegistry(pipes);
@@ -283,6 +290,7 @@ namespace Ephemeral.Ghost.Domain
             Kernel32.RegCloseKey(hKey);
             Marshal.FreeHGlobal(dst);
         }
+
 
     }
 }

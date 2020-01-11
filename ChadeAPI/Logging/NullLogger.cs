@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Ephemeral.Ghost.Logging
+namespace Ephemeral.Chade.Logging
 {
-    public class NullLogging : ILogger
+    public class NullLogger : ILogger
     {
         public void Debug(string msg)
         {
