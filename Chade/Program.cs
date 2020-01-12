@@ -10,17 +10,23 @@ namespace Ephemeral.Chade
         static void Main(string[] args)
         {
             //var connector = new TcpBindConnector();
-            //var connectorBuilder = new TcpConnectorBuilder();
-            /*var connector = connectorBuilder.
+            /*var connectorBuilder = new TcpConnectorBuilder();
+            var connector = connectorBuilder.
                 SetIPAddress("127.0.0.1").
                 SetPort(1234).
                 UseBindConnection().
                 Build();*/
             var builder = new NamedPipeConnectorBuilder();
             var connector = builder.
+                UseBindConnector().
+                SetRemoteHost(".").
+                SetName("Ephemeral.Chade").
+                SetNullDACL(true).
+                Build();
+            /*var connector = builder.
                 SetNullDACL(true).
                 SetName("Ephemeral.Chade").
-                Build();
+                Build();*/
             var channel = connector.EstablishOnce();
             connector.Dispose();
 

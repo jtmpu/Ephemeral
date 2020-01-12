@@ -5,11 +5,20 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 namespace Ephemeral.Chade.Communication.NamedPipes
 {
+    public enum ChannelType
+    {
+        Client,
+        Server
+    }
+
     public class NamedPipeChannel : IChannel
     {
+
+        public ChannelType Type { get; }
         public string Name { get; }
 
         public IntPtr Handle { get; }
@@ -22,7 +31,7 @@ namespace Ephemeral.Chade.Communication.NamedPipes
 
         public uint Mode { get; }
 
-        internal NamedPipeChannel(IntPtr handle, string name, uint inBufSize, uint outBufSize, uint openMode, uint mode)
+        internal NamedPipeChannel(IntPtr handle, string name, uint inBufSize, uint outBufSize, uint openMode, uint mode, ChannelType type)
         {
             this.Handle = handle;
             this.Name = name;
@@ -30,6 +39,7 @@ namespace Ephemeral.Chade.Communication.NamedPipes
             this.InBufferSize = inBufSize;
             this.OpenMode = openMode;
             this.Mode = mode;
+            this.Type = type;
         }
 
         /// <summary>
@@ -115,6 +125,10 @@ namespace Ephemeral.Chade.Communication.NamedPipes
                 buf = new byte[count];
             }
 
+            // Due to a lockup in the named pipe read functionality, we manually wait here until data is available.
+            while (!IsDataAvailable())
+                Thread.Sleep(10);
+
             bool f = Kernel32.ReadFile(this.Handle, buf, (uint)count, ref read, IntPtr.Zero);
             if (!f)
             {
@@ -135,7 +149,7 @@ namespace Ephemeral.Chade.Communication.NamedPipes
 
         public bool IsConnected()
         {
-            throw new NotImplementedException();
+            return true;
         }
 
         public void Dispose()

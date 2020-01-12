@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Ephemeral.Chade.Exceptions;
 using Ephemeral.Chade.Logging;
 using Ephemeral.WinAPI;
 
@@ -20,11 +21,6 @@ namespace Ephemeral.Chade.Communication.NamedPipes
 
         public uint Mode { get; }
 
-        public NamedPipeBindConnector()
-        {
-
-        }
-
         public NamedPipeBindConnector(IntPtr pipeHandle, string name, uint inBufferSize, uint outBufferSize, uint openMode, uint mode)
         {
             this.Handle = pipeHandle;
@@ -37,7 +33,6 @@ namespace Ephemeral.Chade.Communication.NamedPipes
 
         public void Dispose()
         {
-            this.Close();
         }
 
         public void Close()
@@ -52,17 +47,21 @@ namespace Ephemeral.Chade.Communication.NamedPipes
         {
             Logger.GetInstance().Info($"Listening for connections over pipe '{this.Name}'");
             Kernel32.DisconnectNamedPipe(this.Handle);
-            if (Kernel32.ConnectNamedPipe(this.Handle, IntPtr.Zero))
+            if (!Kernel32.ConnectNamedPipe(this.Handle, IntPtr.Zero))
             {
                 var error = Kernel32.GetLastError();
                 if (error == Constants.ERROR_PIPE_CONNECTED)
                 {
                     Logger.GetInstance().Info($"Received connection on pipe '{this.Name}'");
-                    return new NamedPipeChannel(this.Handle, this.Name, this.InBufferSize, this.OutBufferSize, this.OpenMode, this.Mode);
+                    return new NamedPipeChannel(this.Handle, this.Name, this.InBufferSize, this.OutBufferSize, this.OpenMode, this.Mode, ChannelType.Server);
                 }
+                var err = $"Failed to listen on pipe '{this.Name}'. ConnetNamedPipe failed with error: {error}";
+                Logger.GetInstance().Error(err);
+                throw new Win32Exception(err);
             }
-            Logger.GetInstance().Info($"Failed to listen on named pipe '{this.Name}'");
-            throw new Exception();
+
+            Logger.GetInstance().Info($"Received connection on pipe '{this.Name}'");
+            return new NamedPipeChannel(this.Handle, this.Name, this.InBufferSize, this.OutBufferSize, this.OpenMode, this.Mode, ChannelType.Server);
         }
     }
 }

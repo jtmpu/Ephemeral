@@ -5,4 +5,8 @@
     <TargetFrameworks>netcoreapp3.0;net45;net40</TargetFrameworks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ChadeAPI\ChadeAPI.csproj" />
+  </ItemGroup>
+
 </Project>
