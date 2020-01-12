@@ -16,9 +16,13 @@ namespace ChadeCLI
             var builder = new NamedPipeConnectorBuilder();
             var connector = builder.
                 UseReverseConnector().
-                SetRemoteHost(".").
+                SetRemoteHost("127.0.0.1").
                 SetName("Ephemeral.Chade").
                 Build();
+            /*var connector = builder.
+                SetName("Ephemeral.Chade").
+                UseBindConnector().
+                Build();*/
             /*var builder = new TcpConnectorBuilder();
             var connector = builder.
                 SetIPAddress("127.0.0.1").

@@ -24,6 +24,11 @@ namespace Ephemeral.Chade
                 SetNullDACL(true).
                 Build();
             /*var connector = builder.
+                UseReverseConnector().
+                SetRemoteHost("127.0.0.1").
+                SetName("Ephemeral.Chade").
+                Build();*/
+            /*var connector = builder.
                 SetNullDACL(true).
                 SetName("Ephemeral.Chade").
                 Build();*/
