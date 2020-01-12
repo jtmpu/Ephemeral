@@ -18,7 +18,6 @@ namespace Ephemeral.Chade.Communication.Tcp
             this.Port = port;
         }
 
-
         public void Dispose()
         {
         }
@@ -37,6 +36,6 @@ namespace Ephemeral.Chade.Communication.Tcp
                 Logger.GetInstance().Info($"TCP reverse connection failed with error: {e.Message}");
                 throw e;
             }
-}
+        }
     }
 }

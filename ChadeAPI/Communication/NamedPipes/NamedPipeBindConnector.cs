@@ -10,6 +10,7 @@ namespace Ephemeral.Chade.Communication.NamedPipes
     public class NamedPipeBindConnector : IConnector
     {
         public string Name { get; }
+        public string PipeName { get; }
 
         public IntPtr Handle { get; }
 
@@ -25,6 +26,7 @@ namespace Ephemeral.Chade.Communication.NamedPipes
         {
             this.Handle = pipeHandle;
             this.Name = name;
+            this.PipeName = $"\\\\.\\pipe\\{this.Name}";
             this.InBufferSize = inBufferSize;
             this.OutBufferSize = outBufferSize;
             this.OpenMode = openMode;
@@ -33,6 +35,7 @@ namespace Ephemeral.Chade.Communication.NamedPipes
 
         public void Dispose()
         {
+            // Specific pipe handles are managed by individual pipe channels
         }
 
         public void Close()

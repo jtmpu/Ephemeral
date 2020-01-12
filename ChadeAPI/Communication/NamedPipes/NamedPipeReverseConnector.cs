@@ -36,15 +36,10 @@ namespace Ephemeral.Chade.Communication.NamedPipes
 
         public void Dispose()
         {
-
         }
 
         public void Close()
         {
-            if (!Kernel32.CloseHandle(this.Handle))
-            {
-                Logger.GetInstance().Error($"Failed to close handle to pipe '{this.PipeName}'. CloseHandle failed with error: {Kernel32.GetLastError()}.");
-            }
         }
 
         public IChannel EstablishOnce()
@@ -59,7 +54,7 @@ namespace Ephemeral.Chade.Communication.NamedPipes
                 throw new Win32Exception(err);
             }
 
-            return new NamedPipeChannel(this.Handle, this.Name, this.InBufferSize, this.OutBufferSize, this.OpenMode, this.Mode, ChannelType.Client);
+            return new NamedPipeChannel(this.Handle, this.PipeName, this.InBufferSize, this.OutBufferSize, this.OpenMode, this.Mode, ChannelType.Client);
         }
     }
 }

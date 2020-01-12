@@ -1,4 +1,5 @@
 ﻿using System;
+using CommandLine;
 using Ephemeral.Chade.Communication.NamedPipes;
 using Ephemeral.Chade.Communication.Tcp;
 using Ephemeral.Chade.Handlers;
@@ -7,45 +8,19 @@ namespace Ephemeral.Chade
 {
     class Program
     {
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
-            //var connector = new TcpBindConnector();
-            /*var connectorBuilder = new TcpConnectorBuilder();
-            var connector = connectorBuilder.
-                SetIPAddress("127.0.0.1").
-                SetPort(1234).
-                UseBindConnection().
-                Build();*/
-            var builder = new NamedPipeConnectorBuilder();
-            var connector = builder.
-                UseBindConnector().
-                SetRemoteHost(".").
-                SetName("Ephemeral.Chade").
-                SetNullDACL(true).
-                Build();
-            /*var connector = builder.
-                UseReverseConnector().
-                SetRemoteHost("127.0.0.1").
-                SetName("Ephemeral.Chade").
-                Build();*/
-            /*var connector = builder.
-                SetNullDACL(true).
-                SetName("Ephemeral.Chade").
-                Build();*/
-            var channel = connector.EstablishOnce();
-            connector.Dispose();
+            return Parser.Default.ParseArguments<CommandLineOptions>(args)
+                .MapResult(
+                (CommandLineOptions opts) => Start(opts),
+                errs => 0);
+        }
 
-            var shell = new SimpleShell(channel);
-            shell.Process();
-
-            while (true)
-            {
-                Console.Read();
-                break;
-            }
-
-            shell.Dispose();
-            channel.Dispose();
+        public static int Start(CommandLineOptions opts)
+        {
+            var cli = new CommandLine(opts);
+            cli.Execute();
+            return 0;
         }
     }
 }

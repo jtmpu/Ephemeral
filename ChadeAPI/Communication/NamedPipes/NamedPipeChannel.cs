@@ -126,8 +126,9 @@ namespace Ephemeral.Chade.Communication.NamedPipes
             }
 
             // Due to a lockup in the named pipe read functionality, we manually wait here until data is available.
+            // TODO: Is there a better way?
             while (!IsDataAvailable())
-                Thread.Sleep(10);
+                Thread.Sleep(100);
 
             bool f = Kernel32.ReadFile(this.Handle, buf, (uint)count, ref read, IntPtr.Zero);
             if (!f)
@@ -147,13 +148,36 @@ namespace Ephemeral.Chade.Communication.NamedPipes
             return (int)read;
         }
 
+        /// <summary>
+        /// According to Pinvoke examples, it's only possible to check 
+        /// this from the server part of the named pipe.
+        /// </summary>
+        /// <returns></returns>
         public bool IsConnected()
         {
             return true;
+            if(this.Type == ChannelType.Server)
+            {
+                if(Kernel32.ConnectNamedPipe(this.Handle, IntPtr.Zero))
+                {
+                    if (Kernel32.GetLastError() == Constants.ERROR_PIPE_CONNECTED)
+                        return true;
+                }
+                return false;
+            }
+            else
+            { 
+                return true;
+            }
         }
 
         public void Dispose()
         {
+            Kernel32.DisconnectNamedPipe(this.Handle);
+            if (!Kernel32.CloseHandle(this.Handle))
+            {
+                Logger.GetInstance().Error($"Failed to close handle to pipe '{this.Name}'. CloseHandle failed with error: {Kernel32.GetLastError()}.");
+            }
         }
     }
 }

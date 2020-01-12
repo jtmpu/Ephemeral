@@ -6,7 +6,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.7.82" />
+    <PackageReference Include="ilmerge" Version="3.0.29" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ChadeAPI\ChadeAPI.csproj" />
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if $(ConfigurationName) == Release (&#xD;&#xA;if NOT &quot;$(OutDir)&quot;==&quot;bin\Release\netcoreapp3.0\&quot; (&#xD;&#xA;del $(TargetDir)*.pdb&#xD;&#xA;mkdir $(TargetDir)merged&#xD;&#xA;&quot;$(ILMergeConsolePath)&quot; /out:&quot;$(TargetDir)merged/$(TargetName).all.exe&quot; &quot;$(TargetDir)$(TargetName).exe&quot; &quot;$(TargetDir)*.dll&quot; /target:exe /wildcards&#xD;&#xA;)&#xD;&#xA;)" />
+  </Target>
 
 </Project>
