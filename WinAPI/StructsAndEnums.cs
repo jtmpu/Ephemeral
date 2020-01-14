@@ -529,4 +529,16 @@ namespace Ephemeral.WinAPI
         public UInt64 Alignment;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TOKEN_ELEVATION
+    {
+        public UInt32 IsElevated;
+    }
+
+    public enum TOKEN_ELEVATION_TYPE
+    {
+        TokenElevationTypeDefault = 1,
+        TokenElevationTypeFull,
+        TokenElevationTypeLimited
+    }
 }

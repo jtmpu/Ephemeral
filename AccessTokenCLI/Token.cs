@@ -40,6 +40,12 @@ namespace Ephemeral.AccessTokenCLI
 
         [Option('a', "all", Required = false, HelpText = "Show all available information")]
         public bool ShowAll { get; set; }
+
+        [Option("restrictions", Required = false, HelpText = "Show restriction information")]
+        public bool ShowRestrictions { get; set; }
+
+        [Option("elevated", Required = false, HelpText = "Show elevation information")]
+        public bool ShowElevations { get; set; }
     }
 
     public class Token
@@ -101,6 +107,45 @@ namespace Ephemeral.AccessTokenCLI
                 ShowSessionID(hToken);
             }
 
+            if (this.options.ShowElevations || this.options.ShowAll)
+            {
+                ShowElevations(hToken);
+            }
+
+            if (this.options.ShowRestrictions || this.options.ShowAll)
+            {
+                ShowRestrictions(hToken);
+            }
+
+        }
+        private void ShowElevations(AccessTokenHandle hToken)
+        {
+            var elevations = AccessTokenHasElevation.FromTokenHandle(hToken);
+            console.WriteLine("[ELEVATIONS]");
+            console.WriteLine("");
+            console.WriteLine(elevations.ToOutputString());
+            console.WriteLine("");
+            var elevationType = AccessTokenElevationType.FromTokenHandle(hToken);
+            console.WriteLine(elevationType.ToOutputString());
+            console.WriteLine("");
+        }
+
+        private void ShowRestrictions(AccessTokenHandle hToken)
+        {
+            var restrictions = AccessTokenHasRestrictions.FromTokenHandle(hToken);
+            console.WriteLine("[RESTRICTIONS]");
+            console.WriteLine("");
+            console.WriteLine(restrictions.ToOutputString());
+            console.WriteLine("");
+
+            if(restrictions.HasRestrictions)
+            {
+                var restrictedSids = AccessTokenRestrictedSids.FromTokenHandle(hToken);
+                console.WriteLine("[RESTRICTIONS - Restricted SIDs]");
+                console.WriteLine("");
+                console.WriteLine(restrictedSids.ToOutputString());
+                console.WriteLine("");
+            }
         }
 
         private void ShowUser(AccessTokenHandle hToken)

@@ -1,24 +1,25 @@
-﻿using System;
+﻿using Ephemeral.AccessTokenAPI.Domain;
+using Ephemeral.AccessTokenAPI.Exceptions;
+using Ephemeral.WinAPI;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
-using Ephemeral.WinAPI;
-using Ephemeral.AccessTokenAPI.Exceptions;
 
 namespace Ephemeral.AccessTokenAPI.Domain.AccessTokenInfo
 {
-    public class AccessTokenGroups
+    public class AccessTokenRestrictedSids
     {
-        private List<ATGroup> groups;
+        private List<ATGroup> _restrictedSids;
 
-        private AccessTokenGroups(List<ATGroup> groups)
+        private AccessTokenRestrictedSids(List<ATGroup> restrictedSids)
         {
-            this.groups = groups;
+            this._restrictedSids = restrictedSids;
         }
 
         public IEnumerable<ATGroup> GetGroupEnumerator()
         {
-            foreach(var group in groups)
+            foreach (var group in _restrictedSids)
             {
                 yield return group;
             }
@@ -27,23 +28,24 @@ namespace Ephemeral.AccessTokenAPI.Domain.AccessTokenInfo
         public string ToOutputString()
         {
             StringBuilder sb = new StringBuilder();
-            foreach(var group in groups)
+            foreach (var group in _restrictedSids)
             {
                 sb.Append($"Group: {group.Domain}\\{group.Name}\nSID: {group.SIDString}\n\n");
             }
             return sb.ToString();
         }
 
-        public static AccessTokenGroups FromTokenHandle(AccessTokenHandle handle)
+
+        public static AccessTokenRestrictedSids FromTokenHandle(AccessTokenHandle handle)
         {
             uint tokenInfLength = 0;
             bool success;
 
             IntPtr hToken = handle.GetHandle();
 
-            success = Advapi32.GetTokenInformation(hToken, TOKEN_INFORMATION_CLASS.TokenGroups, IntPtr.Zero, tokenInfLength, out tokenInfLength);
+            success = Advapi32.GetTokenInformation(hToken, TOKEN_INFORMATION_CLASS.TokenRestrictedSids, IntPtr.Zero, tokenInfLength, out tokenInfLength);
             IntPtr tokenInfo = Marshal.AllocHGlobal(Convert.ToInt32(tokenInfLength));
-            success = Advapi32.GetTokenInformation(hToken, TOKEN_INFORMATION_CLASS.TokenGroups, tokenInfo, tokenInfLength, out tokenInfLength);
+            success = Advapi32.GetTokenInformation(hToken, TOKEN_INFORMATION_CLASS.TokenRestrictedSids, tokenInfo, tokenInfLength, out tokenInfLength);
 
             if (success)
             {
@@ -53,7 +55,7 @@ namespace Ephemeral.AccessTokenAPI.Domain.AccessTokenInfo
 
                 var sidAndAttrSize = Marshal.SizeOf(new SID_AND_ATTRIBUTES());
 
-                for(int i = 0; i < groups.GroupCount; i++)
+                for (int i = 0; i < groups.GroupCount; i++)
                 {
                     var saa = (SID_AND_ATTRIBUTES)Marshal.PtrToStructure(new IntPtr(tokenInfo.ToInt64() + i * sidAndAttrSize + IntPtr.Size), typeof(SID_AND_ATTRIBUTES));
                     var sid = saa.Sid;
@@ -61,7 +63,7 @@ namespace Ephemeral.AccessTokenAPI.Domain.AccessTokenInfo
 
                     IntPtr strPtr;
                     var sidString = "";
-                    if(Advapi32.ConvertSidToStringSid(sid, out strPtr))
+                    if (Advapi32.ConvertSidToStringSid(sid, out strPtr))
                     {
                         sidString = Marshal.PtrToStringAuto(strPtr);
                     }
@@ -82,10 +84,10 @@ namespace Ephemeral.AccessTokenAPI.Domain.AccessTokenInfo
 
                     var name = "";
                     var domain = "";
-                    if(!Advapi32.LookupAccountSid(null, sidBytes, lpName, ref cchname, lpdomain, ref cchdomain, out peUse))
+                    if (!Advapi32.LookupAccountSid(null, sidBytes, lpName, ref cchname, lpdomain, ref cchdomain, out peUse))
                     {
                         var err = Kernel32.GetLastError();
-                        if(err == Constants.ERROR_INSUFFICIENT_BUFFER)
+                        if (err == Constants.ERROR_INSUFFICIENT_BUFFER)
                         {
                             lpName.EnsureCapacity((int)cchname);
                             lpdomain.EnsureCapacity((int)cchdomain);
@@ -114,36 +116,14 @@ namespace Ephemeral.AccessTokenAPI.Domain.AccessTokenInfo
                 }
 
                 Marshal.FreeHGlobal(tokenInfo);
-                return new AccessTokenGroups(parsedGroups);
+                return new AccessTokenRestrictedSids(parsedGroups);
             }
             else
             {
                 Marshal.FreeHGlobal(tokenInfo);
-                Logger.GetInstance().Error($"Failed to retreive session id information for access token. GetTokenInformation failed with error: {Kernel32.GetLastError()}");
+                Logger.GetInstance().Error($"Failed to retreive restricted sids for access token. GetTokenInformation failed with error: {Kernel32.GetLastError()}");
                 throw new TokenInformationException();
             }
-
-        }
-    }
-
-    public class ATGroup
-    {
-
-        public string SIDString { get; }
-        public IntPtr SIDPtr { get; }
-        public int Attributes { get; }
-        public string Name { get; }
-        public string Domain { get; }
-        public SID_NAME_USE Type { get; }
-        
-        public ATGroup(string sidName, IntPtr sidPtr, int attributes, string name, string domain, SID_NAME_USE tpe)
-        {
-            this.SIDPtr = sidPtr;
-            this.SIDString = sidName;
-            this.Attributes = attributes;
-            this.Name = name;
-            this.Domain = domain;
-            this.Type = tpe;
         }
     }
 }

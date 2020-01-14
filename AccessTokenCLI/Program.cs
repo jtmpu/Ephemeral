@@ -54,8 +54,9 @@ namespace Ephemeral.AccessTokenCLI
                 info.Execute();
                 return 0;
             }
-            catch
+            catch(Exception e)
             {
+                co.Error(e.Message);
                 return 1;
             }
         }
@@ -70,8 +71,9 @@ namespace Ephemeral.AccessTokenCLI
                 token.Execute();
                 return 0;
             }
-            catch
+            catch(Exception e)
             {
+                co.Error(e.Message);
                 return 1;
             }
         }

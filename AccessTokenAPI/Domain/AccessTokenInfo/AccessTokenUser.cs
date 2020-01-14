@@ -11,20 +11,21 @@ namespace Ephemeral.AccessTokenAPI.Domain.AccessTokenInfo
     {
         public string Username { get; }
         public string Domain { get; }
-
+        public string SIDString { get; }
         public SID_NAME_USE Type { get; }
 
-        private AccessTokenUser(string user, string domain, SID_NAME_USE t)
+        private AccessTokenUser(string user, string domain, string sidString, SID_NAME_USE t)
         {
             this.Username = user;
             this.Domain = domain;
             this.Type = t;
+            this.SIDString = sidString;
         }
 
         public string ToOutputString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append($"{Domain}\\{Username}");
+            sb.Append($"User: {Domain}\\{Username}\nSID: {SIDString}\n");
             return sb.ToString();
         }
 
@@ -51,6 +52,19 @@ namespace Ephemeral.AccessTokenAPI.Domain.AccessTokenInfo
                 StringBuilder sbDomain = new StringBuilder();
                 uint cchReferencedDomainName = (uint)sbDomain.Capacity;
                 SID_NAME_USE peUse;
+
+
+                IntPtr strPtr;
+                var sidString = "";
+                if (Advapi32.ConvertSidToStringSid(tokenUser.User.Sid, out strPtr))
+                {
+                    sidString = Marshal.PtrToStringAuto(strPtr);
+                }
+                else
+                {
+                    Logger.GetInstance().Error($"Failed to convert SID to string. ConvertSidToStringSid failed with error: {Kernel32.GetLastError()}");
+                    sidString = "UNKNOWN";
+                }
 
 
                 var user = "";
@@ -88,7 +102,7 @@ namespace Ephemeral.AccessTokenAPI.Domain.AccessTokenInfo
                 }
                 Marshal.FreeHGlobal(tokenInfo);
 
-                return new AccessTokenUser(user, domain, peUse);
+                return new AccessTokenUser(user, domain, sidString, peUse);
             }
             else
             {
