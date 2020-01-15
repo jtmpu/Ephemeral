@@ -11,7 +11,7 @@ namespace Ephemeral.Chade
 {
     public class CommandLineOptions
     {
-        [Option('r', "reverse", Default = false, HelpText = "Use reverse connection instead of listener")]
+        [Option('r', "reverse", Default = true, HelpText = "Use reverse connection instead of listener")]
         public bool Reverse { get; set; }
 
         [Option('t', "tcp", Default = false, HelpText = "Use tcp instead of a pipe")]
