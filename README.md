@@ -4,6 +4,8 @@
 
 A suite of tools for lateral movements within a windows environment.
 
+Pre-compiled version of releases can be found here: https://github.com/jtmpu/Ephemeral/releases/tag/v0.1
+
 # Solution description
 
 The solution Ephemeral is a suite of sub-projects with the intention of simplifying lateral movements within larger
