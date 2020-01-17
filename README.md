@@ -39,7 +39,7 @@ These two projects aim at abusing access tokens for processes on a local system.
 borrow these tokens. The DLL has partially been designed to be loaded directly in powershell, to simplify its distribution,
 and hopefully avoid writing anything to disk.
 
-## GhostAPI, GhostNode and GhostCLI
+## ChadeAPI, Chade and ChadeCLI
 
 These three projects are under development. The intention is to create a solid foundation for remote shell on computers
 within the environment, which can be used to load other useful assemblies such as AccessTokenAPI.
